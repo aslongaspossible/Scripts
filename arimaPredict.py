@@ -6,6 +6,7 @@ Created on Fri Dec 15 11:28:20 2017
 """
 
 import tushare as ts
+from pyramid.arima import auto_arima
 
 class arimaPredict:
     def __init__(self,code,date):
