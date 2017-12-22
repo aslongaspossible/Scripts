@@ -9,14 +9,16 @@ import tushare as ts
 import time
 
 class stockSimulate:
-    def __init__(self,balance,fee=0.0005,tax=0.001):
+    def __init__(self,balance,startDate,startTime,fee=0.0005,tax=0.001):
         self.__balance=float(balance)
         self.__fee=float(fee)
         self.__tax=float(tax)
+        self.__time=startTime
+        self.__date=startDate
         self.__stockList={}
         
-    def __timeToStamp(inputTime):
-        c=time.mktime(time.strptime('2017-12-19 '+inputTime,"%Y-%m-%d %H:%M:%S"))
+    def __timeToStamp(inputTime,inputDate='2017-12-19'):
+        c=time.mktime(time.strptime(inputDate+' '+inputTime,"%Y-%m-%d %H:%M:%S"))
         return c
         
     def __matchTime(self,data,matchTime):
@@ -48,43 +50,49 @@ class stockSimulate:
             
     
     def buy(self,code,shares,buyDate,buyTime):
-        buyDayData=ts.get_tick_data(code,buyDate)
-        hitIndex=self.__matchTime(buyDayData,buyTime)
-        buyPrice=buyDayData.price[hitIndex].tolist()[0]
-        
-        commission=(buyPrice*float(shares))
-        
-        newBalance=self.__balance-buyPrice*float(shares)-commission
-        if(newBalance<0):
-            print('balance not enough!')
+        if(self.__timeToStamp(buyTime,buyDate)<self.__timeToStamp(self.__time,self.__date)):
+            print('invalid time')
         else:
-            if(self.__stockList.has_key(code)):
-                self.__stockList[code]+=shares
+            buyDayData=ts.get_tick_data(code,buyDate)
+            hitIndex=self.__matchTime(buyDayData,buyTime)
+            buyPrice=buyDayData.price[hitIndex].tolist()[0]
+            
+            commission=(buyPrice*float(shares))
+            
+            newBalance=self.__balance-buyPrice*float(shares)-commission
+            if(newBalance<0):
+                print('balance not enough!')
             else:
-                self.__stockList[code]=shares
-            self.__balance=newBalance
-                
+                if(self.__stockList.has_key(code)):
+                    self.__stockList[code]+=shares
+                else:
+                    self.__stockList[code]=shares
+                self.__balance=newBalance
+                    
     def showAccount(self):
         print('balance:'+self.__balance)
         for code in self.__stockList.keys():
             print(code+':'+self.__stockList[code])
         
     def sell(self,code,shares,sellDate,sellTime):
-        if(not self.__stockList.has_key[code]):
-            print('not have this stock')
+        if(self.__timeToStamp(buyTime,buyDate)<self.__timeToStamp(self.__time,self.__date)):
+            print('invalid time')
         else:
-            newShares=self.__stockList[code]-shares
-            if(newShares<0):
-                print('shares not enough')
+            if(not self.__stockList.has_key[code]):
+                print('not have this stock')
             else:
-                sellDayData=ts.get_tick_data(code,sellDate)
-                hitIndex=self.__matchTime(sellDayData,sellTime)
-                sellPrice=sellDayData.price[hitIndex].tolist()[0]
-                commission=self.__tradeCommission(sellPrice*float(shares))
-                newBalance=self.__balance+sellPrice*float(shares)*(1-self.__tax)-commission
-                if(newBalance<0):
-                    print('balance not enough!')
+                newShares=self.__stockList[code]-shares
+                if(newShares<0):
+                    print('shares not enough')
                 else:
-                    self.__balance=newBalance
-                    self.__stockList[code]=newShares
+                    sellDayData=ts.get_tick_data(code,sellDate)
+                    hitIndex=self.__matchTime(sellDayData,sellTime)
+                    sellPrice=sellDayData.price[hitIndex].tolist()[0]
+                    commission=self.__tradeCommission(sellPrice*float(shares))
+                    newBalance=self.__balance+sellPrice*float(shares)*(1-self.__tax)-commission
+                    if(newBalance<0):
+                        print('balance not enough!')
+                    else:
+                        self.__balance=newBalance
+                        self.__stockList[code]=newShares
                 
