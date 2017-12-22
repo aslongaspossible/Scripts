@@ -75,7 +75,7 @@ class stockSimulate:
             print(code+':'+self.__stockList[code])
         
     def sell(self,code,shares,sellDate,sellTime):
-        if(self.__timeToStamp(buyTime,buyDate)<self.__timeToStamp(self.__time,self.__date)):
+        if(self.__timeToStamp(sellTime,sellDate)<self.__timeToStamp(self.__time,self.__date)):
             print('invalid time')
         else:
             if(not self.__stockList.has_key[code]):
