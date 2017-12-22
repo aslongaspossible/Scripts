@@ -77,10 +77,14 @@ class stockSimulate:
             if(newShares<0):
                 print('shares not enough')
             else:
-                self.__stockList[code]=newShares
                 sellDayData=ts.get_tick_data(code,sellDate)
                 hitIndex=self.__matchTime(sellDayData,sellTime)
                 sellPrice=sellDayData.price[hitIndex].tolist()[0]
                 commission=self.__tradeCommission(sellPrice*float(shares))
-                self.__balance+=(sellPrice*float(shares)*(1-self.__tax)-commission)
+                newBalance=self.__balance+sellPrice*float(shares)*(1-self.__tax)-commission
+                if(newBalance<0):
+                    print('balance not enough!')
+                else:
+                    self.__balance=newBalance
+                    self.__stockList[code]=newShares
                 
