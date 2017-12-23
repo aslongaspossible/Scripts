@@ -36,11 +36,12 @@ class historyData:
         ax.xaxis.set_major_formatter(dates.DateFormatter('%Y-%m-%d'))
         plt.xticks(rotation=45)
         if(ma5):
-            ax.plot(times,self.data.ma5)
+            ax.plot(times,self.data.ma5,label='ma5')
         if(ma10):
-            ax.plot(times,self.data.ma10)
+            ax.plot(times,self.data.ma10,label='ma10')
         if(ma20):
-            ax.plot(times,self.data.ma20)
+            ax.plot(times,self.data.ma20,label='ma20')
+        ax.legend()
         candlestick_ohlc(ax,self.ohlc,width =0.4,colorup='r',colordown='g')
         fig.savefig(self.code+'_'+self.start+'_'+self.end+'.png')
         
