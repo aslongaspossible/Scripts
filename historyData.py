@@ -26,7 +26,7 @@ class historyData:
     def plotCandleStick(self,height=7,width=10,ma5=False,ma10=False,ma20=False,volume=False):
         times=self.data.index.map(self.stringToFloatDate)
         if(volume):
-            fig,(ax,ax2)=plt.subplots(nrows=2,sharex='col')
+            fig,(ax,ax2)=plt.subplots(nrows=2,sharex='col',gridspec_kw = {'height_ratios':[2, 1]})
             ax2.bar(times,self.data.volume)
         else:
             fig, ax = plt.subplots()
