@@ -54,20 +54,23 @@ class stockSimulate:
             print('invalid time')
         else:
             buyDayData=ts.get_tick_data(code,buyDate)
-            hitIndex=self.__matchTime(buyDayData,buyTime)
-            buyPrice=buyDayData.price[hitIndex].tolist()[0]
-            
-            commission=(buyPrice*float(shares))
-            
-            newBalance=self.__balance-buyPrice*float(shares)-commission
-            if(newBalance<0):
-                print('balance not enough!')
-            else:
-                if(self.__stockList.has_key(code)):
-                    self.__stockList[code]+=shares
+            if(buyDayData.price[0]!=buyDayData.price[0]):
+                print('not a TRADING DAY')
+            else：
+                hitIndex=self.__matchTime(buyDayData,buyTime)
+                buyPrice=buyDayData.price[hitIndex].tolist()[0]
+                
+                commission=(buyPrice*float(shares))
+                
+                newBalance=self.__balance-buyPrice*float(shares)-commission
+                if(newBalance<0):
+                    print('balance not enough!')
                 else:
-                    self.__stockList[code]=shares
-                self.__balance=newBalance
+                    if(self.__stockList.has_key(code)):
+                        self.__stockList[code]+=shares
+                    else:
+                        self.__stockList[code]=shares
+                    self.__balance=newBalance
                     
     def showAccount(self):
         print('balance:'+self.__balance)
@@ -86,13 +89,16 @@ class stockSimulate:
                     print('shares not enough')
                 else:
                     sellDayData=ts.get_tick_data(code,sellDate)
-                    hitIndex=self.__matchTime(sellDayData,sellTime)
-                    sellPrice=sellDayData.price[hitIndex].tolist()[0]
-                    commission=self.__tradeCommission(sellPrice*float(shares))
-                    newBalance=self.__balance+sellPrice*float(shares)*(1-self.__tax)-commission
-                    if(newBalance<0):
-                        print('balance not enough!')
-                    else:
-                        self.__balance=newBalance
-                        self.__stockList[code]=newShares
+                if(sellDayData.price[0]!=sellDayData.price[0]):
+                    print('not a TRADING DAY')
+                else：
+                        hitIndex=self.__matchTime(sellDayData,sellTime)
+                        sellPrice=sellDayData.price[hitIndex].tolist()[0]
+                        commission=self.__tradeCommission(sellPrice*float(shares))
+                        newBalance=self.__balance+sellPrice*float(shares)*(1-self.__tax)-commission
+                        if(newBalance<0):
+                            print('balance not enough!')
+                        else:
+                            self.__balance=newBalance
+                            self.__stockList[code]=newShares
                 
