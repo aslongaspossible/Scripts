@@ -260,6 +260,7 @@ class mainGUI(TK.Tk):
         labeltitle=TK.Label(thirdf, text="History Shangzheng Index Information")
         labeltitle.pack(side=TK.TOP, fill=TK.BOTH)
         shangzhenghis=historyData('sh', str(dt.date.today()-dt.timedelta(days=90)), str(dt.date.today()))
+        shangzhenghis.plotCandleStick()
         self.dpimg = ImageTk.PhotoImage(file='sh'+'_'+str(dt.date.today()-dt.timedelta(days=90))+'_'+str(dt.date.today())+'.png')
         TK.Label(thirdf, image=self.dpimg).pack(side=TK.TOP)
         #fourthf=TK.Frame(self, relief=TK.RAISED, borderwidth=4, pady=30)
