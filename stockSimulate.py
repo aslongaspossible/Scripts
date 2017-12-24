@@ -22,8 +22,9 @@ class stockSimulate:
         self.__afterEndTime=self.__timeToStamp('15:00:00')
         
         
-    def __timeToStamp(inputTime,inputDate='2017-12-19'):
-        c=time.mktime(time.strptime(inputDate+' '+inputTime,"%Y-%m-%d %H:%M:%S"))
+    def __timeToStamp(self,inputTime,inputDate='2017-12-19'):
+        structTime=time.strptime(inputDate+' '+inputTime,"%Y-%m-%d %H:%M:%S")
+        c=time.mktime(structTime)
         return c
         
     def __matchTime(self,data,matchTime):
@@ -73,6 +74,8 @@ class stockSimulate:
             elif(not self.__isTradeTime(buyTime)):
                 print('not in trading time')
             else:
+                self.__time=buyTime
+                self.__date=buyDate
                 hitIndex=self.__matchTime(buyDayData,buyTime)
                 buyPrice=buyDayData.price[hitIndex].tolist()[0]
                 
@@ -89,9 +92,9 @@ class stockSimulate:
                     self.__balance=newBalance
                     
     def showAccount(self):
-        print('balance:'+self.__balance)
+        print('balance:'+str(self.__balance))
         for code in self.__stockList.keys():
-            print(code+':'+self.__stockList[code])
+            print(code+':'+str(self.__stockList[code]))
         
     def sell(self,code,shares,sellDate,sellTime):
         if(self.__timeToStamp(sellTime,sellDate)<self.__timeToStamp(self.__time,self.__date)):
@@ -111,6 +114,8 @@ class stockSimulate:
                 elif(not self.__isTradeTime(sellTime)):
                     print('not in trading time')
                 else:
+                    self.__time=sellTime
+                    self.__date=sellDate
                     hitIndex=self.__matchTime(sellDayData,sellTime)
                     sellPrice=sellDayData.price[hitIndex].tolist()[0]
                     commission=self.__tradeCommission(sellPrice*float(shares))
