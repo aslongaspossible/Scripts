@@ -85,7 +85,7 @@ class stockSimulate:
                 if(newBalance<0):
                     print('balance not enough!')
                 else:
-                    if(self.__stockList.has_key(code)):
+                    if(code in self.__stockList):
                         self.__stockList[code]+=shares
                     else:
                         self.__stockList[code]=shares
@@ -100,7 +100,7 @@ class stockSimulate:
         if(self.__timeToStamp(sellTime,sellDate)<self.__timeToStamp(self.__time,self.__date)):
             print('invalid time')
         else:
-            if(not self.__stockList.has_key[code]):
+            if(code not in self.__stockList):
                 print('not have this stock')
             else:
                 newShares=self.__stockList[code]-shares
