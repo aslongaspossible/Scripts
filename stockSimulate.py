@@ -37,15 +37,15 @@ class stockSimulate:
             times=data.time.map(self.__timeToStamp)
             indexMax=data.index.max()
             indexMin=0
-            hitIndex=indexMax/2
+            hitIndex=indexMax//2
             while(indexMax>indexMin):
                 if(times[hitIndex]>floatT):
                     indexMin=hitIndex+1
                 else:
                     indexMax=hitIndex
-                hitIndex=(indexMin+indexMax)/2
+                hitIndex=(indexMin+indexMax)//2
         
-        return hitIndex
+        return int(hitIndex)
     
     def __isTradeTime(self,time):
         floatT=self.__timeToStamp(time)
@@ -77,7 +77,7 @@ class stockSimulate:
                 self.__time=buyTime
                 self.__date=buyDate
                 hitIndex=self.__matchTime(buyDayData,buyTime)
-                buyPrice=buyDayData.price[hitIndex].tolist()[0]
+                buyPrice=buyDayData.price[hitIndex].tolist()
                 
                 commission=(buyPrice*float(shares))
                 
@@ -117,7 +117,7 @@ class stockSimulate:
                     self.__time=sellTime
                     self.__date=sellDate
                     hitIndex=self.__matchTime(sellDayData,sellTime)
-                    sellPrice=sellDayData.price[hitIndex].tolist()[0]
+                    sellPrice=sellDayData.price[hitIndex].tolist()
                     commission=self.__tradeCommission(sellPrice*float(shares))
                     newBalance=self.__balance+sellPrice*float(shares)*(1-self.__tax)-commission
                     if(newBalance<0):
