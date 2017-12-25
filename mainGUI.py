@@ -9,6 +9,7 @@ from PIL import Image, ImageTk
 import tushare as ts
 import matplotlib.pyplot as plt
 from datetime import datetime
+from datetime import date
 from matplotlib import dates
 from matplotlib.finance import candlestick_ohlc
 import datetime as dt
@@ -18,6 +19,38 @@ from historyData import *
 from tickData import *
 import tkinter.font as tkfont
 
+class figureplot(TK.Toplevel):  #单独构造画图类
+    def __init__(self, plotinfo, stockcode):
+        super().__init__()
+        self.title("Stock Price Viewer")
+        tfont=tkfont.Font(family='Helvetica', size=10, weight=tkfont.BOLD)
+        plottitle=TK.Frame(self, bg='white')
+        plottitle.pack()
+        plotlabel=TK.Label(plottitle,text='Stock'+'  '+stockcode,font=tfont, bg='white')
+        plotlabel.pack(pady=5)
+        #figplot=TK.Frame(self)
+        #figplot.pack(side=TK.TOP, fill=TK.X)
+        self.img = ImageTk.PhotoImage(file=plotinfo)
+        TK.Label(self, image=self.img).pack(side=TK.TOP) 
+'''        
+class modifiedap(arimaPredict):
+    def __init__(self,code,date):
+        self.code=code;
+        self.date=date;
+        self.data=ts.get_hist_data(code,"2015-01-01",date);
+    def predictor(self,days,ifCompare=False):
+        fit=auto_arima(list(reversed(self.data.close.tolist())),start_p=1,max_p=9,start_q=1,max_q=6,d=1,max_d=5,seasonal=False)
+        onePredict=fit.predict(n_periods=days)
+        x=range(0,days)
+        y=ts.get_hist_data(self.code,start=self.date,end=str(date.today()))
+        if(ifCompare):
+            if(pd.nrow(y)>days):
+                plt.plot(x,list(reversed(y.close.tolist()))[1:(days+1)],'g')
+            else:
+                plt.plot(x[0:(pd.nrow(y)-1)],list(reversed(y.close.tolist())),'g')
+        fig=plt.plot(x,onePredict,'r')
+        fig.savefig(self.code+'_'+self.date+'_'+str(days)+'.png')
+'''     
 class mainGUI(TK.Tk):
     def __init__(self):
         super().__init__()
@@ -37,9 +70,9 @@ class mainGUI(TK.Tk):
         filemenu.add_command(label='History Data', accelerator='Ctrl+H', compound='left', underline=0, command=self.callthirdhistory)
         filemenu.add_separator()
         filemenu.add_command(label='Tick Data', accelerator='Ctrl+T', compound='left', underline=0, command=self.callthirdreal)
-        premenu.add_command(label='Arima Self-correlation', accelerator='Ctrl+A', compound='left', underline=0, command=self.callthirdhistory)
+        premenu.add_command(label='Arima Self-correlation', accelerator='Ctrl+A', compound='left', underline=0, command=self.callarima)
         premenu.add_separator()
-        premenu.add_command(label='Lagrange Interpolation', accelerator='Ctrl+L', compound='left', underline=0, command=self.callthirdreal)
+        premenu.add_command(label='Lagrange Interpolation', accelerator='Ctrl+L', compound='left', underline=0)
         self.config(menu=menubar)
         
         #构建主界面上的上证指数和
@@ -51,15 +84,58 @@ class mainGUI(TK.Tk):
         shangzhenghis.plotCandleStick(ma5=True,ma10=True,ma20=True,volume=True)
         self.dpimg = ImageTk.PhotoImage(file='sh'+'_'+str(dt.date.today()-dt.timedelta(days=90))+'_'+str(dt.date.today())+'.png')
         TK.Label(thirdf, image=self.dpimg).pack(side=TK.TOP)
-        TK.Label(thirdf, text='By 理科小矿工', font=menufont, bg='white').pack(side=TK.TOP)
     def callthirdhistory(self):
         thirdhistory=thilayerhistory() 
     def callthirdreal(self):
         thirdreal=thilayerrealtime()
+    def callarima(self):
+        secarima=seclayerarima()
     def secopyright(self):
         thirdcopy=showcopyright()
     def trysimulation(self):
         thirdsim=seclayersim()
+        
+class seclayerarima(TK.Toplevel):
+    def __init__(self):
+        super().__init__()
+        self.title('ARIMA Prediction')
+        arima1=TK.Frame(self)                
+        arima1.pack(side=TK.TOP, fill=TK.X)
+        inputexplain=TK.Label(arima1, text='股票代码如600292，日期格式为yyyy-mm-dd，如2017-01-01',pady=20)
+        inputexplain.pack(side=TK.LEFT, fill=TK.X)
+        arima2=TK.Frame(self)               #股票代码
+        arima2.pack(side=TK.TOP, fill=TK.X)    
+        arima_code=TK.Label(arima2, text='Stock Code',width=10)
+        arima_code.pack(side=TK.LEFT)
+        self.arimacode=TK.StringVar()
+        arimaentry1=TK.Entry(arima2, textvariable=self.arimacode,width=38)
+        arimaentry1.pack(side=TK.LEFT)
+        arima3=TK.Frame(self)             #查询时间
+        arima3.pack(side=TK.TOP, fill=TK.X)   
+        arimastart=TK.Label(arima3, text='Start Date', width=10)
+        arimastart.pack(side=TK.LEFT)
+        self.arimatime=TK.StringVar()
+        arimatimeentry=TK.Entry(arima3,textvariable=self.arimatime, width=13)
+        arimatimeentry.pack(side=TK.LEFT)
+        arimaend=TK.Label(arima3, text='Days', width=10)
+        arimaend.pack(side=TK.LEFT)
+        self.arima_days=TK.IntVar()
+        dayentry=TK.Entry(arima3,textvariable=self.arima_days, width=13)
+        dayentry.pack(side=TK.LEFT)        
+        arima4=TK.Frame(self)               #选项确定和取消  
+        arima4.pack(side=TK.TOP, fill=TK.X, pady=15)
+        TK.Button(arima4, text='Cancel', width=6, command=self.Cancel).pack(side=TK.RIGHT) #self.quit())
+        TK.Button(arima4, text='Confirm', width=6, command=self.Confirm).pack(side=TK.RIGHT) #self.drawfigure())
+    def Confirm(self):
+        print('Not finished')
+        '''
+        ap=modifiedap(self.arimacode.get(), self.arimatime.get())
+        ap.predictor(self.arima_days.get())
+        self.plotinfoap=self.arimacode.get()+'_'+self.arimatime.get()+'_'+str(self.arima_days.get())+'.png'
+        arimagraph=figureplot(self.plotinfoap, self.arimacode.get())
+        '''
+    def Cancel(self):
+        self.destroy()
         
 class showcopyright(TK.Toplevel):
     def __init__(self):
@@ -74,31 +150,33 @@ class thilayerhistory(TK.Toplevel):
     def __init__(self):
         super().__init__()
         self.title("See Period Data")
+        self.geometry('350x180')         #history data窗口大小
+        self.resizable(width=False, height=False)
+        row3=TK.Frame(self)                
+        row3.pack(side=TK.TOP, fill=TK.X)
+        inputexplain=TK.Label(row3, text='股票代码如600292，日期格式为yyyy-mm-dd，如2017-01-01',pady=20)
+        inputexplain.pack(side=TK.LEFT, fill=TK.X)
         row1=TK.Frame(self)               #股票代码
         row1.pack(side=TK.TOP, fill=TK.X)    
         stock_code=TK.Label(row1, text='Stock Code',width=10)
         stock_code.pack(side=TK.LEFT)
         self.stockcode=TK.StringVar()
-        codeentry=TK.Entry(row1, textvariable=self.stockcode,width=30)
+        codeentry=TK.Entry(row1, textvariable=self.stockcode,width=38)
         codeentry.pack(side=TK.LEFT)
         row2=TK.Frame(self)             #查询时间
         row2.pack(side=TK.TOP, fill=TK.X)   
         start_time=TK.Label(row2, text='Start Date', width=10)
         start_time.pack(side=TK.LEFT)
         self.starttime=TK.StringVar()
-        starttimeentry=TK.Entry(row2,textvariable=self.starttime, width=10)
+        starttimeentry=TK.Entry(row2,textvariable=self.starttime, width=13)
         starttimeentry.pack(side=TK.LEFT)
         end_time=TK.Label(row2, text='End Date', width=10)
         end_time.pack(side=TK.LEFT)
         self.endtime=TK.StringVar()
-        endtimeentry=TK.Entry(row2,textvariable=self.endtime, width=10)
+        endtimeentry=TK.Entry(row2,textvariable=self.endtime, width=13)
         endtimeentry.pack(side=TK.LEFT)        
-        row3=TK.Frame(self)                
-        row3.pack(side=TK.TOP, fill=TK.X)
-        inputexplain=TK.Label(row3, text='         (请输入yyyy-mm-dd,如2017-01-01)')
-        inputexplain.pack(side=TK.LEFT, fill=TK.X)
         row4=TK.Frame(self)               #选项确定和取消  
-        row4.pack(side=TK.TOP, fill=TK.X)
+        row4.pack(side=TK.TOP, fill=TK.X, pady=15)
         TK.Button(row4, text='Cancel', width=6, command=self.Cancel).pack(side=TK.RIGHT) #self.quit())
         TK.Button(row4, text='Confirm', width=6, command=self.Confirm).pack(side=TK.RIGHT) #self.drawfigure())
     def Confirm(self):
@@ -106,9 +184,9 @@ class thilayerhistory(TK.Toplevel):
         self.stdate=self.starttime.get()
         self.endate=self.endtime.get()
         drawhistory=historyData(self.code, self.stdate, self.endate)
-        drawhistory.plotCandleStick()
+        drawhistory.plotCandleStick(ma5=True,ma10=True,ma20=True,volume=True)
         self.plotinfo1=self.code+'_'+self.stdate+'_'+self.endate+'.png'
-        hisgraph=figureplot(self.plotinfo1)    
+        hisgraph=figureplot(self.plotinfo1, self.code)    
     def Cancel(self):
         self.destroy()
         
@@ -116,12 +194,16 @@ class thilayerrealtime(TK.Toplevel):
     def __init__(self):
         super().__init__()
         self.title("See Day Data")
+        rowl=TK.Frame(self)                
+        rowl.pack(side=TK.TOP, fill=TK.X)
+        inputexplain=TK.Label(rowl, text='股票代码如600292，时间格式为yyyy-mm-dd，如2017-01-01',pady=15)
+        inputexplain.pack(side=TK.LEFT, fill=TK.X)
         row1=TK.Frame(self)               #股票代码
         row1.pack(side=TK.TOP, fill=TK.X)    
         stock_code=TK.Label(row1, text='Stock Code',width=10)
         stock_code.pack(side=TK.LEFT)
         self.stockcode2=TK.StringVar()
-        codeentry=TK.Entry(row1, textvariable=self.stockcode2,width=30)
+        codeentry=TK.Entry(row1, textvariable=self.stockcode2,width=35)
         codeentry.pack(side=TK.LEFT)  
         row2=TK.Frame(self)             #查询时间
         row2.pack(side=TK.TOP, fill=TK.X)   
@@ -140,7 +222,7 @@ class thilayerrealtime(TK.Toplevel):
         detail=tickData(self.code2, self.stdate2)
         detail.plotTickLine()
         self.plotinfo2=self.code2+'_'+self.stdate2+'.png'
-        detgraph=figureplot(self.plotinfo2)
+        detgraph=figureplot(self.plotinfo2, self.code2)
     def Cancel(self):
         self.destroy()      
 
