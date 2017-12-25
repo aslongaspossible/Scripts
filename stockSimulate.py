@@ -9,16 +9,22 @@ import tushare as ts
 import time
 
 class stockSimulate:
-    def __init__(self,balance,startDate,startTime,fee=0.0005,tax=0.001):
+    def __init__(self,balance,startDate,startTime='00:00:00',fee=0.0005,tax=0.001):
         self.__balance=float(balance)
         self.__fee=float(fee)
         self.__tax=float(tax)
         self.__time=startTime
         self.__date=startDate
         self.__stockList={}
+        self.__earlyStartTime=self.__timeToStamp('09:30:00')
+        self.__earlyEndTime=self.__timeToStamp('11:30:00')
+        self.__afterStartTime=self.__timeToStamp('13:00:00')
+        self.__afterEndTime=self.__timeToStamp('15:00:00')
         
-    def __timeToStamp(inputTime,inputDate='2017-12-19'):
-        c=time.mktime(time.strptime(inputDate+' '+inputTime,"%Y-%m-%d %H:%M:%S"))
+        
+    def __timeToStamp(self,inputTime,inputDate='2017-12-19'):
+        structTime=time.strptime(inputDate+' '+inputTime,"%Y-%m-%d %H:%M:%S")
+        c=time.mktime(structTime)
         return c
         
     def __matchTime(self,data,matchTime):
@@ -31,15 +37,24 @@ class stockSimulate:
             times=data.time.map(self.__timeToStamp)
             indexMax=data.index.max()
             indexMin=0
-            hitIndex=indexMax/2
+            hitIndex=indexMax//2
             while(indexMax>indexMin):
                 if(times[hitIndex]>floatT):
                     indexMin=hitIndex+1
                 else:
                     indexMax=hitIndex
-                hitIndex=(indexMin+indexMax)/2
+                hitIndex=(indexMin+indexMax)//2
         
-        return hitIndex
+        return int(hitIndex)
+    
+    def __isTradeTime(self,time):
+        floatT=self.__timeToStamp(time)
+        isTradingTime=True
+        if(floatT<self.__earlyStartTime or floatT>self.__afterEndTime):
+            isTradingTime=False
+        if(floatT>self.__earlyEndTime and floatT<self.__afterStartTime):
+            isTradingTime=False
+        return isTradingTime
         
     def __tradeCommission(self,volumes):
         commission=volumes*self.__fee
@@ -54,31 +69,38 @@ class stockSimulate:
             print('invalid time')
         else:
             buyDayData=ts.get_tick_data(code,buyDate)
-            hitIndex=self.__matchTime(buyDayData,buyTime)
-            buyPrice=buyDayData.price[hitIndex].tolist()[0]
-            
-            commission=(buyPrice*float(shares))
-            
-            newBalance=self.__balance-buyPrice*float(shares)-commission
-            if(newBalance<0):
-                print('balance not enough!')
+            if(buyDayData.price[0]!=buyDayData.price[0]):
+                print('not a TRADING DAY')
+            elif(not self.__isTradeTime(buyTime)):
+                print('not in trading time')
             else:
-                if(self.__stockList.has_key(code)):
-                    self.__stockList[code]+=shares
+                self.__time=buyTime
+                self.__date=buyDate
+                hitIndex=self.__matchTime(buyDayData,buyTime)
+                buyPrice=buyDayData.price[hitIndex].tolist()
+                
+                commission=(buyPrice*float(shares))
+                
+                newBalance=self.__balance-buyPrice*float(shares)-commission
+                if(newBalance<0):
+                    print('balance not enough!')
                 else:
-                    self.__stockList[code]=shares
-                self.__balance=newBalance
+                    if(code in self.__stockList):
+                        self.__stockList[code]+=shares
+                    else:
+                        self.__stockList[code]=shares
+                    self.__balance=newBalance
                     
     def showAccount(self):
-        print('balance:'+self.__balance)
+        print('balance:'+str(self.__balance))
         for code in self.__stockList.keys():
-            print(code+':'+self.__stockList[code])
+            print(code+':'+str(self.__stockList[code]))
         
     def sell(self,code,shares,sellDate,sellTime):
         if(self.__timeToStamp(sellTime,sellDate)<self.__timeToStamp(self.__time,self.__date)):
             print('invalid time')
         else:
-            if(not self.__stockList.has_key[code]):
+            if(code not in self.__stockList):
                 print('not have this stock')
             else:
                 newShares=self.__stockList[code]-shares
@@ -86,8 +108,16 @@ class stockSimulate:
                     print('shares not enough')
                 else:
                     sellDayData=ts.get_tick_data(code,sellDate)
+                    
+                if(sellDayData.price[0]!=sellDayData.price[0]):
+                    print('not a TRADING DAY')
+                elif(not self.__isTradeTime(sellTime)):
+                    print('not in trading time')
+                else:
+                    self.__time=sellTime
+                    self.__date=sellDate
                     hitIndex=self.__matchTime(sellDayData,sellTime)
-                    sellPrice=sellDayData.price[hitIndex].tolist()[0]
+                    sellPrice=sellDayData.price[hitIndex].tolist()
                     commission=self.__tradeCommission(sellPrice*float(shares))
                     newBalance=self.__balance+sellPrice*float(shares)*(1-self.__tax)-commission
                     if(newBalance<0):
