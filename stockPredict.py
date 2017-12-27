@@ -17,7 +17,7 @@ class stockPredict:
         self.__data=ts.get_hist_data(code,"2015-01-01",date);
         self.__length=len(self.__data.index.tolist());
         
-    def arimaPredictor(self,days,ifCompare=False,daysBefore=10):
+    def arimaPredictor(self,days,ifCompare=False,daysBefore=5):
         if(self.__length<daysBefore):
             daysBefore=self.__length;
         fit=auto_arima(list(reversed(self.__data.close.tolist()[0:daysBefore])),start_p=1,max_p=9,start_q=1,max_q=16,d=1,max_d=5,seasonal=False);
