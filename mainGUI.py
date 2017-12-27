@@ -236,7 +236,7 @@ class seclayersim(TK.Toplevel):
         row_bal3.pack(side=TK.TOP, fill=TK.X)
         stock_code3=TK.Label(row_bal3, text='Balance',width=15)
         stock_code3.pack(side=TK.LEFT)
-        self.balance=TK.IntVar()
+        self.balance=TK.DoubleVar()
         balance_entry=TK.Entry(row_bal3, textvariable=self.balance,width=10)
         balance_entry.pack(side=TK.LEFT)
         startdate=TK.Label(row_bal3, text='Start Date',width=15)
@@ -282,6 +282,7 @@ class seclayersim(TK.Toplevel):
     def Confirm(self):
         sts=ss.stockSimulate(self.balance.get(), self.sdate.get(), self.stime.get(), self.fee.get(), self.tax.get())
         thirdsim=thilayersimulate(sts)
+        self.destroy()
     def Cancel(self):
         self.destroy()
 
@@ -290,6 +291,7 @@ class thilayersimulate(TK.Toplevel):
         super().__init__()
         self.sts=sts
         self.title("Stock Price Simulator")
+        self.resizable(width=False, height=False)
         expfont=tkfont.Font(family='Helvetica', size=10, weight=tkfont.BOLD)
         row_sim3=TK.Frame(self, relief=TK.RIDGE, borderwidth=4)
         row_sim3.pack(side=TK.TOP, fill=TK.X)
@@ -367,6 +369,13 @@ class thilayersimulate(TK.Toplevel):
         accountframe=TK.Frame(Accountinfo)
         accountframe.pack(side=TK.TOP, fill=TK.X, pady=5)
         TK.Label(accountframe,  text='Account Information', font=expfont).pack(side=TK.LEFT)
+        balanceframe=TK.Frame(Accountinfo)
+        balanceframe.pack(side=TK.TOP, fill=TK.X)
+        self.smybalance=TK.IntVar()
+        self.smybalance.set(sts.showbalance)
+        TK.Label(balanceframe, text='Balance').pack(side=TK.LEFT)
+        self.balentry=TK.Entry(balanceframe, textvariable=self.smybalance)
+        self.balentry.pack(side=TK.LEFT)
         accframe=TK.Frame(Accountinfo)
         accframe.pack(side=TK.TOP, fill=TK.X)
         self.ayscroll=TK.Scrollbar(accframe, orient=TK.VERTICAL)
@@ -377,6 +386,7 @@ class thilayersimulate(TK.Toplevel):
         self.aop.grid(row=0, column=0, sticky=TK.N+TK.S+TK.E+TK.W)
         self.axscroll['command']=self.aop.xview
         self.ayscroll['command']=self.aop.yview
+        #self.aop.insert(TK.END, "this is a test")
         #ophistory.pack(side=TK.TOP, fill=TK.X)
     def Confirm(self):
         self.newcode=self.code4.get()
@@ -404,13 +414,24 @@ class thilayersimulate(TK.Toplevel):
             
         if((self.optype.get())==2):
             self.sts.sell(self.opcode, self.opshare, self.operationdate, self.operationtime)
+            
             if(self.sts.opselllog==0):
                 b=self.operationdate+'  '+self.operationtime+'  sell  '+self.opcode+'  '+str(self.opshare)+' share  Success'
             else:
                 b=self.operationdate+'  '+self.operationtime+'  sell  '+self.opcode+'  '+str(self.opshare)+' share  Fail('+self.sts.sellstring+')'
                 sellerrormsg=simmsg(self.sts.sellstring)
             self.ophistory.insert(TK.END, b)
-                
+        self.showaccount() 
+        
+    def showaccount(self):
+        self.sts.showAccount()
+        self.smybalance.set(self.sts.showbalance)
+        self.aop.delete(0, TK.END)
+        #self.aop.insert(TK.END, self.sts.showbalance)
+        for code in self.sts.showstocklist.keys():
+            l=code+':     '+str(self.sts.showstocklist[code])+' share'
+            self.aop.insert(TK.END, l)
+        
 class simmsg(TK.Toplevel):
     def __init__(self, msg):
         super().__init__()
