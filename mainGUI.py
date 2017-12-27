@@ -9,6 +9,7 @@ from PIL import Image, ImageTk
 import tushare as ts
 import matplotlib.pyplot as plt
 from datetime import datetime
+from datetime import date
 from matplotlib import dates
 from matplotlib.finance import candlestick_ohlc
 import datetime as dt
@@ -18,11 +19,44 @@ from historyData import *
 from tickData import *
 import tkinter.font as tkfont
 
+class figureplot(TK.Toplevel):  #单独构造画图类
+    def __init__(self, plotinfo, stockcode):
+        super().__init__()
+        self.title("Stock Price Viewer")
+        tfont=tkfont.Font(family='Helvetica', size=10, weight=tkfont.BOLD)
+        plottitle=TK.Frame(self, bg='white')
+        plottitle.pack()
+        plotlabel=TK.Label(plottitle,text='Stock'+'  '+stockcode,font=tfont, bg='white')
+        plotlabel.pack(pady=5)
+        #figplot=TK.Frame(self)
+        #figplot.pack(side=TK.TOP, fill=TK.X)
+        self.img = ImageTk.PhotoImage(file=plotinfo)
+        TK.Label(self, image=self.img).pack(side=TK.TOP) 
+'''        
+class modifiedap(arimaPredict):
+    def __init__(self,code,date):
+        self.code=code;
+        self.date=date;
+        self.data=ts.get_hist_data(code,"2015-01-01",date);
+    def predictor(self,days,ifCompare=False):
+        fit=auto_arima(list(reversed(self.data.close.tolist())),start_p=1,max_p=9,start_q=1,max_q=6,d=1,max_d=5,seasonal=False)
+        onePredict=fit.predict(n_periods=days)
+        x=range(0,days)
+        y=ts.get_hist_data(self.code,start=self.date,end=str(date.today()))
+        if(ifCompare):
+            if(pd.nrow(y)>days):
+                plt.plot(x,list(reversed(y.close.tolist()))[1:(days+1)],'g')
+            else:
+                plt.plot(x[0:(pd.nrow(y)-1)],list(reversed(y.close.tolist())),'g')
+        fig=plt.plot(x,onePredict,'r')
+        fig.savefig(self.code+'_'+self.date+'_'+str(days)+'.png')
+'''     
 class mainGUI(TK.Tk):
     def __init__(self):
         super().__init__()
         self.title("Stock Price Predictor")
         self.setupGUI()
+        self.resizable(width=False, height=False)
     def setupGUI(self):
         menubar=TK.Menu(self)
         filemenu=TK.Menu(menubar, tearoff=0)
@@ -37,13 +71,13 @@ class mainGUI(TK.Tk):
         filemenu.add_command(label='History Data', accelerator='Ctrl+H', compound='left', underline=0, command=self.callthirdhistory)
         filemenu.add_separator()
         filemenu.add_command(label='Tick Data', accelerator='Ctrl+T', compound='left', underline=0, command=self.callthirdreal)
-        premenu.add_command(label='Arima Self-correlation', accelerator='Ctrl+A', compound='left', underline=0, command=self.callthirdhistory)
+        premenu.add_command(label='Arima Self-correlation', accelerator='Ctrl+A', compound='left', underline=0, command=self.callarima)
         premenu.add_separator()
-        premenu.add_command(label='Lagrange Interpolation', accelerator='Ctrl+L', compound='left', underline=0, command=self.callthirdreal)
+        premenu.add_command(label='Lagrange Interpolation', accelerator='Ctrl+L', compound='left', underline=0)
         self.config(menu=menubar)
         
         #构建主界面上的上证指数和
-        thirdf=TK.Frame(self, borderwidth=4, pady=30, bg='white')
+        thirdf=TK.Frame(self, borderwidth=4, pady=20, bg='white')
         thirdf.pack(side=TK.LEFT)
         labeltitle=TK.Label(thirdf, text="Shangzheng Index Information", font=mfont, bg='white')
         labeltitle.pack(side=TK.TOP, fill=TK.BOTH)
@@ -51,15 +85,58 @@ class mainGUI(TK.Tk):
         shangzhenghis.plotCandleStick(ma5=True,ma10=True,ma20=True,volume=True)
         self.dpimg = ImageTk.PhotoImage(file='sh'+'_'+str(dt.date.today()-dt.timedelta(days=90))+'_'+str(dt.date.today())+'.png')
         TK.Label(thirdf, image=self.dpimg).pack(side=TK.TOP)
-        TK.Label(thirdf, text='By 理科小矿工', font=menufont, bg='white').pack(side=TK.TOP)
     def callthirdhistory(self):
         thirdhistory=thilayerhistory() 
     def callthirdreal(self):
         thirdreal=thilayerrealtime()
+    def callarima(self):
+        secarima=seclayerarima()
     def secopyright(self):
         thirdcopy=showcopyright()
     def trysimulation(self):
         thirdsim=seclayersim()
+        
+class seclayerarima(TK.Toplevel):
+    def __init__(self):
+        super().__init__()
+        self.title('ARIMA Prediction')
+        arima1=TK.Frame(self)                
+        arima1.pack(side=TK.TOP, fill=TK.X)
+        inputexplain=TK.Label(arima1, text='股票代码如600292，日期格式为yyyy-mm-dd，如2017-01-01',pady=20)
+        inputexplain.pack(side=TK.LEFT, fill=TK.X)
+        arima2=TK.Frame(self)               #股票代码
+        arima2.pack(side=TK.TOP, fill=TK.X)    
+        arima_code=TK.Label(arima2, text='Stock Code',width=10)
+        arima_code.pack(side=TK.LEFT)
+        self.arimacode=TK.StringVar()
+        arimaentry1=TK.Entry(arima2, textvariable=self.arimacode,width=38)
+        arimaentry1.pack(side=TK.LEFT)
+        arima3=TK.Frame(self)             #查询时间
+        arima3.pack(side=TK.TOP, fill=TK.X)   
+        arimastart=TK.Label(arima3, text='Start Date', width=10)
+        arimastart.pack(side=TK.LEFT)
+        self.arimatime=TK.StringVar()
+        arimatimeentry=TK.Entry(arima3,textvariable=self.arimatime, width=13)
+        arimatimeentry.pack(side=TK.LEFT)
+        arimaend=TK.Label(arima3, text='Days', width=10)
+        arimaend.pack(side=TK.LEFT)
+        self.arima_days=TK.IntVar()
+        dayentry=TK.Entry(arima3,textvariable=self.arima_days, width=13)
+        dayentry.pack(side=TK.LEFT)        
+        arima4=TK.Frame(self)               #选项确定和取消  
+        arima4.pack(side=TK.TOP, fill=TK.X, pady=15)
+        TK.Button(arima4, text='Cancel', width=6, command=self.Cancel).pack(side=TK.RIGHT) #self.quit())
+        TK.Button(arima4, text='Confirm', width=6, command=self.Confirm).pack(side=TK.RIGHT) #self.drawfigure())
+    def Confirm(self):
+        print('Not finished')
+        '''
+        ap=modifiedap(self.arimacode.get(), self.arimatime.get())
+        ap.predictor(self.arima_days.get())
+        self.plotinfoap=self.arimacode.get()+'_'+self.arimatime.get()+'_'+str(self.arima_days.get())+'.png'
+        arimagraph=figureplot(self.plotinfoap, self.arimacode.get())
+        '''
+    def Cancel(self):
+        self.destroy()
         
 class showcopyright(TK.Toplevel):
     def __init__(self):
@@ -74,31 +151,33 @@ class thilayerhistory(TK.Toplevel):
     def __init__(self):
         super().__init__()
         self.title("See Period Data")
+        self.geometry('350x180')         #history data窗口大小
+        self.resizable(width=False, height=False)
+        row3=TK.Frame(self)                
+        row3.pack(side=TK.TOP, fill=TK.X)
+        inputexplain=TK.Label(row3, text='股票代码如600292，日期格式为yyyy-mm-dd，如2017-01-01',pady=20)
+        inputexplain.pack(side=TK.LEFT, fill=TK.X)
         row1=TK.Frame(self)               #股票代码
         row1.pack(side=TK.TOP, fill=TK.X)    
         stock_code=TK.Label(row1, text='Stock Code',width=10)
         stock_code.pack(side=TK.LEFT)
         self.stockcode=TK.StringVar()
-        codeentry=TK.Entry(row1, textvariable=self.stockcode,width=30)
+        codeentry=TK.Entry(row1, textvariable=self.stockcode,width=38)
         codeentry.pack(side=TK.LEFT)
         row2=TK.Frame(self)             #查询时间
         row2.pack(side=TK.TOP, fill=TK.X)   
         start_time=TK.Label(row2, text='Start Date', width=10)
         start_time.pack(side=TK.LEFT)
         self.starttime=TK.StringVar()
-        starttimeentry=TK.Entry(row2,textvariable=self.starttime, width=10)
+        starttimeentry=TK.Entry(row2,textvariable=self.starttime, width=13)
         starttimeentry.pack(side=TK.LEFT)
         end_time=TK.Label(row2, text='End Date', width=10)
         end_time.pack(side=TK.LEFT)
         self.endtime=TK.StringVar()
-        endtimeentry=TK.Entry(row2,textvariable=self.endtime, width=10)
+        endtimeentry=TK.Entry(row2,textvariable=self.endtime, width=13)
         endtimeentry.pack(side=TK.LEFT)        
-        row3=TK.Frame(self)                
-        row3.pack(side=TK.TOP, fill=TK.X)
-        inputexplain=TK.Label(row3, text='         (请输入yyyy-mm-dd,如2017-01-01)')
-        inputexplain.pack(side=TK.LEFT, fill=TK.X)
         row4=TK.Frame(self)               #选项确定和取消  
-        row4.pack(side=TK.TOP, fill=TK.X)
+        row4.pack(side=TK.TOP, fill=TK.X, pady=15)
         TK.Button(row4, text='Cancel', width=6, command=self.Cancel).pack(side=TK.RIGHT) #self.quit())
         TK.Button(row4, text='Confirm', width=6, command=self.Confirm).pack(side=TK.RIGHT) #self.drawfigure())
     def Confirm(self):
@@ -106,9 +185,9 @@ class thilayerhistory(TK.Toplevel):
         self.stdate=self.starttime.get()
         self.endate=self.endtime.get()
         drawhistory=historyData(self.code, self.stdate, self.endate)
-        drawhistory.plotCandleStick()
+        drawhistory.plotCandleStick(ma5=True,ma10=True,ma20=True,volume=True)
         self.plotinfo1=self.code+'_'+self.stdate+'_'+self.endate+'.png'
-        hisgraph=figureplot(self.plotinfo1)    
+        hisgraph=figureplot(self.plotinfo1, self.code)    
     def Cancel(self):
         self.destroy()
         
@@ -116,12 +195,16 @@ class thilayerrealtime(TK.Toplevel):
     def __init__(self):
         super().__init__()
         self.title("See Day Data")
+        rowl=TK.Frame(self)                
+        rowl.pack(side=TK.TOP, fill=TK.X)
+        inputexplain=TK.Label(rowl, text='股票代码如600292，时间格式为yyyy-mm-dd，如2017-01-01',pady=15)
+        inputexplain.pack(side=TK.LEFT, fill=TK.X)
         row1=TK.Frame(self)               #股票代码
         row1.pack(side=TK.TOP, fill=TK.X)    
         stock_code=TK.Label(row1, text='Stock Code',width=10)
         stock_code.pack(side=TK.LEFT)
         self.stockcode2=TK.StringVar()
-        codeentry=TK.Entry(row1, textvariable=self.stockcode2,width=30)
+        codeentry=TK.Entry(row1, textvariable=self.stockcode2,width=35)
         codeentry.pack(side=TK.LEFT)  
         row2=TK.Frame(self)             #查询时间
         row2.pack(side=TK.TOP, fill=TK.X)   
@@ -140,7 +223,7 @@ class thilayerrealtime(TK.Toplevel):
         detail=tickData(self.code2, self.stdate2)
         detail.plotTickLine()
         self.plotinfo2=self.code2+'_'+self.stdate2+'.png'
-        detgraph=figureplot(self.plotinfo2)
+        detgraph=figureplot(self.plotinfo2, self.code2)
     def Cancel(self):
         self.destroy()      
 
@@ -148,79 +231,218 @@ class seclayersim(TK.Toplevel):
     def __init__(self):
         super().__init__()
         self.title("Stock Price Simulator")
-        row_bal3=TK.Frame(self)
+        self.resizable(width=False, height=False)
+        row_bal3=TK.Frame(self, pady=5)
         row_bal3.pack(side=TK.TOP, fill=TK.X)
-        stock_code3=TK.Label(row_bal3, text='Balance',width=10)
+        stock_code3=TK.Label(row_bal3, text='Balance',width=15)
         stock_code3.pack(side=TK.LEFT)
-        self.balance=TK.IntVar()
+        self.balance=TK.DoubleVar()
         balance_entry=TK.Entry(row_bal3, textvariable=self.balance,width=10)
         balance_entry.pack(side=TK.LEFT)
-        TK.Button(row_bal3, text='Cancel', width=6, command=self.Cancel).pack(side=TK.RIGHT) #self.quit())
-        TK.Button(row_bal3, text='Confirm', width=6, command=self.Confirm).pack(side=TK.RIGHT) #self.drawfigure())
-        row_bal4=TK.Frame(self)
-        row_bal4.pack(side=TK.TOP, fill=TK.X)
-        startdate=TK.Label(row_bal4, text='Start Date',width=10)
+        startdate=TK.Label(row_bal3, text='Start Date',width=15)
         startdate.pack(side=TK.LEFT)
         self.sdate=TK.StringVar()
-        Date_entry=TK.Entry(row_bal4, textvariable=self.sdate,width=10)
+        Date_entry=TK.Entry(row_bal3, textvariable=self.sdate,width=10)
         Date_entry.pack(side=TK.LEFT)
-        TK.Button(row_bal3, text='Cancel', width=6, command=self.Cancel).pack(side=TK.RIGHT) #self.quit())
-        TK.Button(row_bal3, text='Confirm', width=6, command=self.Confirm).pack(side=TK.RIGHT) #self.drawfigure())
+        simtime=TK.Label(row_bal3, text='Start Time (Optional)',width=20)
+        simtime.pack(side=TK.LEFT)
+        self.stime=TK.StringVar()
+        self.stime.set('00:00:00')
+        time_entry=TK.Entry(row_bal3, textvariable=self.stime,width=10)
+        time_entry.pack(side=TK.LEFT)
+        row_bal4=TK.Frame(self)
+        row_bal4.pack(side=TK.TOP, fill=TK.X)
+        TK.Label(row_bal4, text='Fee (Optional)',width=15).pack(side=TK.LEFT)
+        self.fee=TK.IntVar()
+        self.fee.set(0.0005)
+        TK.Entry(row_bal4,textvariable=self.fee, width=10).pack(side=TK.LEFT)
+        TK.Label(row_bal4, text='Tax (Optional)',width=15).pack(side=TK.LEFT)
+        self.tax=TK.IntVar()
+        self.tax.set(0.001)
+        TK.Entry(row_bal4,textvariable=self.tax, width=10).pack(side=TK.LEFT)
+        TK.Button(row_bal4, text='Cancel', width=12, command=self.Cancel).pack(side=TK.RIGHT) #self.quit())
+        TK.Button(row_bal4, text='Confirm', width=12, command=self.Confirm, padx=4).pack(side=TK.RIGHT) #self.drawfigure())
+        notification=TK.Frame(self, relief=TK.GROOVE,borderwidth=2, pady=10)
+        notification.pack(side=TK.TOP, fill=TK.X)
+        note1=TK.Frame(notification)
+        note1.pack(side=TK.TOP, fill=TK.X)
+        note2=TK.Frame(notification)
+        note2.pack(side=TK.TOP, fill=TK.X)
+        note3=TK.Frame(notification)
+        note3.pack(side=TK.TOP, fill=TK.X)
+        note4=TK.Frame(notification)
+        note4.pack(side=TK.TOP, fill=TK.X)
+        note5=TK.Frame(notification)
+        note5.pack(side=TK.TOP, fill=TK.X)
+        TK.Label(note1, text='(1) Balance is the initial money for your simulation').pack(side=TK.LEFT)
+        TK.Label(note2, text='(2) Start date is the starting date for simulation (format yyyy-mm-dd)').pack(side=TK.LEFT)
+        TK.Label(note3, text='(3) Start time for simulation is optional. (foramt hh:mm:ss, 00:00:00 if not indicated)').pack(side=TK.LEFT)
+        TK.Label(note4, text='(4) Fee is optional. (0.0005 if not indicated)').pack(side=TK.LEFT)
+        TK.Label(note5, text='(5) Tax is optional. (0.001 if not indicated)').pack(side=TK.LEFT)
     def Confirm(self):
-        sts=ss.stockSimulate(self.balance.get(), self.sdate.get())
-        thirdsim=thilayersimulate()
+        sts=ss.stockSimulate(self.balance.get(), self.sdate.get(), self.stime.get(), self.fee.get(), self.tax.get())
+        thirdsim=thilayersimulate(sts)
+        self.destroy()
     def Cancel(self):
         self.destroy()
 
 class thilayersimulate(TK.Toplevel):
-    def __init__(self):
+    def __init__(self, sts):
         super().__init__()
+        self.sts=sts
         self.title("Stock Price Simulator")
-        row_bal=TK.Frame(self)
+        self.resizable(width=False, height=False)
+        expfont=tkfont.Font(family='Helvetica', size=10, weight=tkfont.BOLD)
+        row_sim3=TK.Frame(self, relief=TK.RIDGE, borderwidth=4)
+        row_sim3.pack(side=TK.TOP, fill=TK.X)
+        row_explain1=TK.Frame(row_sim3)
+        row_explain1.pack(side=TK.TOP, fill=TK.X, pady=5)
+        TK.Label(row_explain1, text='Operation Region', font=expfont).pack(side=TK.LEFT)
+        row_bal=TK.Frame(row_sim3)
         row_bal.pack(side=TK.TOP, fill=TK.X)
-        stock_code2=TK.Label(row_bal, text='Stock Code',width=10)
+        stock_code2=TK.Label(row_bal, text='Stock Code',width=15)
         stock_code2.pack(side=TK.LEFT)
-        self.stockcode2=TK.StringVar()
-        code_entry=TK.Entry(row_bal, textvariable=self.stockcode2,width=33)
+        self.stockcode3=TK.StringVar()
+        code_entry=TK.Entry(row_bal, textvariable=self.stockcode3,width=10)
         code_entry.pack(side=TK.LEFT)
-        row_sim1=TK.Frame(self)
+        row_sim1=TK.Frame(row_sim3, pady=5)
         row_sim1.pack(side=TK.TOP, fill=TK.X)
-        row_sim2=TK.Frame(self)
+        row_sim2=TK.Frame(row_sim3)
         row_sim2.pack(side=TK.TOP, fill=TK.X)
-        self.var=TK.IntVar()
-        self.var.set(1)
-        TK.Radiobutton(row_sim1, text='Execute Buy', value=1, variable=self.var).pack(side=TK.LEFT)
-        TK.Radiobutton(row_sim2, text='Execute Sell', value=2, variable=self.var).pack(side=TK.LEFT)
-        share=TK.Label(row_sim1, text='Share Amount',width=15)
+        self.optype=TK.IntVar()
+        self.optype.set(1)
+        TK.Radiobutton(row_sim2, text='Execute Buy', value=1, variable=self.optype).pack(side=TK.LEFT)
+        TK.Radiobutton(row_sim2, text='Execute Sell', value=2, variable=self.optype).pack(side=TK.LEFT)
+        share=TK.Label(row_bal, text='Share Amount',width=15)
         share.pack(side=TK.LEFT)      
         self.shareamount=TK.IntVar()
-        share_entry=TK.Entry(row_sim1, textvariable=self.shareamount,width=17)
+        share_entry=TK.Entry(row_bal, textvariable=self.shareamount,width=10)
         share_entry.pack(side=TK.LEFT)
-        Dateop=TK.Label(row_sim2, text="     Date", width=5)
+        Dateop=TK.Label(row_sim1, text="Operation Date", width=15)
         Dateop.pack(side=TK.LEFT)
-        self.opdate=TK.IntVar()
-        Date_entry=TK.Entry(row_sim2, textvariable=self.opdate,width=10)
+        self.opdate=TK.StringVar()
+        Date_entry=TK.Entry(row_sim1, textvariable=self.opdate,width=10)
         Date_entry.pack(side=TK.LEFT)
-        Timeop=TK.Label(row_sim2, text="Time", width=5)
+        Timeop=TK.Label(row_sim1, text="Operation Time", width=15)
         Timeop.pack(side=TK.LEFT)
-        self.optime=TK.IntVar()
-        Time_entry=TK.Entry(row_sim2, textvariable=self.optime,width=10)
+        self.optime=TK.StringVar()
+        Time_entry=TK.Entry(row_sim1, textvariable=self.optime,width=10)
         Time_entry.pack(side=TK.LEFT)
-        row_sim3=TK.Frame(self)
-        row_sim3.pack(side=TK.TOP, fill=TK.X)
-        TK.Button(row_sim3, text='Cancel', width=6, command=self.Cancel).pack(side=TK.RIGHT) #self.quit())
-        TK.Button(row_sim3, text='Execute', width=6, command=self.Execute).pack(side=TK.RIGHT) #self.drawfigure())
-        TK.Button(row_sim3, text='Show Account', width=10, command=self.showaccount).pack(side=TK.RIGHT)
+        TK.Button(row_sim2, text='Cancel', width=8, command=self.Cancel).pack(side=TK.RIGHT, padx=12) #self.quit())
+        TK.Button(row_sim2, text='Execute', width=8, command=self.Execute).pack(side=TK.RIGHT) #self.drawfigure())
+        row_sim4=TK.Frame(self, relief=TK.RIDGE, borderwidth=4)
+        row_sim4.pack(side=TK.TOP, fill=TK.X)
+        row_explain3=TK.Frame(row_sim4)
+        row_explain3.pack(side=TK.TOP, fill=TK.X, pady=5)
+        TK.Label(row_explain3, text='Consult History', font=expfont).pack(side=TK.LEFT)
+        row_sim5=TK.Frame(row_sim4)
+        row_sim5.pack(side=TK.TOP, fill=TK.X)
+        TK.Label(row_sim5, text='Stock code', width=15).pack(side=TK.LEFT)
+        self.code4=TK.StringVar()
+        TK.Entry(row_sim5, textvariable=self.code4, width=10).pack(side=TK.LEFT)
+        TK.Label(row_sim5, text='Start Date', width=15).pack(side=TK.LEFT)
+        self.simsdate=TK.StringVar()
+        TK.Entry(row_sim5, textvariable=self.simsdate, width=10).pack(side=TK.LEFT)
+        row_sim6=TK.Frame(row_sim4)
+        row_sim6.pack(side=TK.TOP, fill=TK.X)
+        TK.Label(row_sim6, text='End Date', width=15).pack(side=TK.LEFT)
+        self.simedate=TK.StringVar()
+        TK.Entry(row_sim6, textvariable=self.simedate, width=10).pack(side=TK.LEFT)
+        TK.Button(row_sim6, text='Confirm', width=8, command=self.Confirm).pack(side=TK.RIGHT,padx=12) #self.quit())
+        ophis=TK.Frame(self, relief=TK.RIDGE, borderwidth=4)
+        ophis.pack(side=TK.TOP)
+        labelframe=TK.Frame(ophis)
+        labelframe.pack(side=TK.TOP, fill=TK.X, pady=5)
+        TK.Label(labelframe,  text='Operation History', font=expfont).pack(side=TK.LEFT)
+        hisframe=TK.Frame(ophis)
+        hisframe.pack(side=TK.TOP, fill=TK.X)
+        self.yscroll=TK.Scrollbar(hisframe, orient=TK.VERTICAL)
+        self.yscroll.grid(row=0, column=1, sticky=TK.N+TK.S)
+        self.xscroll=TK.Scrollbar(hisframe, orient=TK.HORIZONTAL)
+        self.xscroll.grid(row=1, column=0, sticky=TK.E+TK.W)
+        self.ophistory=TK.Listbox(hisframe, width=52,  height=6, xscrollcommand=self.xscroll.set, yscrollcommand=self.yscroll.set)
+        self.ophistory.grid(row=0, column=0, sticky=TK.N+TK.S+TK.E+TK.W)
+        self.xscroll['command']=self.ophistory.xview
+        self.yscroll['command']=self.ophistory.yview
+        Accountinfo=TK.Frame(self, relief=TK.RIDGE, borderwidth=4)
+        Accountinfo.pack(side=TK.TOP)
+        accountframe=TK.Frame(Accountinfo)
+        accountframe.pack(side=TK.TOP, fill=TK.X, pady=5)
+        TK.Label(accountframe,  text='Account Information', font=expfont).pack(side=TK.LEFT)
+        balanceframe=TK.Frame(Accountinfo)
+        balanceframe.pack(side=TK.TOP, fill=TK.X)
+        self.smybalance=TK.IntVar()
+        self.smybalance.set(sts.showbalance)
+        TK.Label(balanceframe, text='Balance').pack(side=TK.LEFT)
+        self.balentry=TK.Entry(balanceframe, textvariable=self.smybalance)
+        self.balentry.pack(side=TK.LEFT)
+        accframe=TK.Frame(Accountinfo)
+        accframe.pack(side=TK.TOP, fill=TK.X)
+        self.ayscroll=TK.Scrollbar(accframe, orient=TK.VERTICAL)
+        self.ayscroll.grid(row=0, column=1, sticky=TK.N+TK.S)
+        self.axscroll=TK.Scrollbar(accframe, orient=TK.HORIZONTAL)
+        self.axscroll.grid(row=1, column=0, sticky=TK.E+TK.W)
+        self.aop=TK.Listbox(accframe, width=52, height=6, xscrollcommand=self.axscroll.set, yscrollcommand=self.ayscroll.set)
+        self.aop.grid(row=0, column=0, sticky=TK.N+TK.S+TK.E+TK.W)
+        self.axscroll['command']=self.aop.xview
+        self.ayscroll['command']=self.aop.yview
+        #self.aop.insert(TK.END, "this is a test")
+        #ophistory.pack(side=TK.TOP, fill=TK.X)
+    def Confirm(self):
+        self.newcode=self.code4.get()
+        self.newst=self.simsdate.get()
+        self.newen=self.simedate.get()
+        conhistory=historyData(self.newcode,self.newst,self.newen)
+        conhistory.plotCandleStick(ma5=True,ma10=True,ma20=True,volume=True)
+        self.plotinfocon=self.newcode+'_'+self.newst+'_'+self.newen+'.png'
+        hisgraph=figureplot(self.plotinfocon, self.newcode)
     def Cancel(self):
         self.destroy()
     def Execute(self):
-        self.opcode=self.stockcode2.get()
+        self.opcode=self.stockcode3.get()
         self.opshare=self.shareamount.get()
         self.operationdate=self.opdate.get()
-        #if(var.get()==1):
-        #    simulate.buy
+        self.operationtime=self.optime.get()
+        if((self.optype.get())==1):
+            self.sts.buy(self.opcode, self.opshare,self.operationdate, self.operationtime)
+            if(self.sts.oplog==0):
+                a=self.operationdate+'  '+self.operationtime+'  buy  '+self.opcode+'  '+str(self.opshare)+' share  Success'
+            else:
+                a=self.operationdate+'  '+self.operationtime+'  buy  '+self.opcode+'  '+str(self.opshare)+' share  Fail('+self.sts.buystring+')'
+                buyerrormsg=simmsg(self.sts.buystring)
+            self.ophistory.insert(TK.END, a)
+            
+        if((self.optype.get())==2):
+            self.sts.sell(self.opcode, self.opshare, self.operationdate, self.operationtime)
+            
+            if(self.sts.opselllog==0):
+                b=self.operationdate+'  '+self.operationtime+'  sell  '+self.opcode+'  '+str(self.opshare)+' share  Success'
+            else:
+                b=self.operationdate+'  '+self.operationtime+'  sell  '+self.opcode+'  '+str(self.opshare)+' share  Fail('+self.sts.sellstring+')'
+                sellerrormsg=simmsg(self.sts.sellstring)
+            self.ophistory.insert(TK.END, b)
+        self.showaccount() 
+        
     def showaccount(self):
-        print("this is not complete")
+        self.sts.showAccount()
+        self.smybalance.set(self.sts.showbalance)
+        self.aop.delete(0, TK.END)
+        #self.aop.insert(TK.END, self.sts.showbalance)
+        for code in self.sts.showstocklist.keys():
+            l=code+':     '+str(self.sts.showstocklist[code])+' share'
+            self.aop.insert(TK.END, l)
+        
+class simmsg(TK.Toplevel):
+    def __init__(self, msg):
+        super().__init__()
+        self.title('Error')
+        self.resizable(width=False, height=False)
+        TK.Label(self, text=msg, bg='white', pady=5).pack(side=TK.TOP)
+        buttonframe=TK.Frame(self, pady=5)
+        buttonframe.pack(side=TK.TOP, fill=TK.X)
+        TK.Button(buttonframe, text='Confirm', width=12, command=self.opConfirm).pack(side=TK.TOP) #self.quit())
+    def opConfirm(self):
+        self.destroy()
         
 if __name__=='__main__':
     haha=mainGUI()
