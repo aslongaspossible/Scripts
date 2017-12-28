@@ -17,16 +17,16 @@ class stockPredict:
         self.__data=ts.get_hist_data(code,"2015-01-01",date);
         self.__length=len(self.__data.index.tolist());
         
-    def arimaPredictor(self,days,ifCompare=False,daysBefore=5):
+    def arimaPredictor(self,days,ifCompare=False,daysBefore=5,column='ma20'):
         if(self.__length<daysBefore):
             daysBefore=self.__length;
-        fit=auto_arima(list(reversed(self.__data.close.tolist()[0:daysBefore])),start_p=1,max_p=9,start_q=1,max_q=16,d=1,max_d=5,seasonal=False);
+        fit=auto_arima(list(reversed(self.__data[column].tolist()[0:daysBefore])),start_p=1,max_p=9,start_q=1,max_q=16,d=1,max_d=5,seasonal=False);
         predict=fit.predict(n_periods=days);
         fig, ax = plt.subplots();
         x=range(days);
         if(ifCompare):
             futureData=ts.get_hist_data(self.__code,start=self.__date,end=str(datetime.date.today()));
-            futureClose=list(reversed(futureData.close.tolist()))[1:];
+            futureClose=list(reversed(futureData[column].tolist()))[1:];
             if(len(futureClose)<days):
                 ax.plot(x[0:len(futureClose)],futureClose,'g',label='real');
             else:
@@ -36,10 +36,10 @@ class stockPredict:
         fig.savefig('arima_'+self.__code+'_'+self.__date+'_'+str(days)+'.png');
     
          
-    def lagrangeInterpolation(self,days=3,ifCompare=False,daysBefore=4):
+    def lagrangeInterpolation(self,days=5,ifCompare=False,daysBefore=3,column='ma20'):
         if(self.__length<daysBefore):
             daysBefore=self.__length;
-        data=list(reversed(self.__data.close[0:daysBefore].tolist()));
+        data=list(reversed(self.__data[column][0:daysBefore].tolist()));
         predict=[];
         x=range(days);
         xBefore=range(-daysBefore,0);
@@ -56,7 +56,7 @@ class stockPredict:
         fig, ax = plt.subplots();
         if(ifCompare):
             futureData=ts.get_hist_data(self.__code,start=self.__date,end=str(datetime.date.today()));
-            futureClose=list(reversed(futureData.close.tolist()))[1:];
+            futureClose=list(reversed(futureData[column].tolist()))[1:];
             if(len(futureClose)<days):
                 ax.plot(x[0:len(futureClose)],futureClose,'g',label='real');
             else:
