@@ -14,7 +14,7 @@ from matplotlib import dates
 from matplotlib.finance import candlestick_ohlc
 import datetime as dt
 import stockSimulate as ss
-from arimaPredict import *
+from stockPredict import *
 from historyData import *
 from tickData import *
 import tkinter.font as tkfont
@@ -23,34 +23,17 @@ class figureplot(TK.Toplevel):  #单独构造画图类
     def __init__(self, plotinfo, stockcode):
         super().__init__()
         self.title("Stock Price Viewer")
+        self.resizable(width=False, height=False)
         tfont=tkfont.Font(family='Helvetica', size=10, weight=tkfont.BOLD)
-        plottitle=TK.Frame(self, bg='white')
+        plottitle=TK.Frame(self)
         plottitle.pack()
-        plotlabel=TK.Label(plottitle,text='Stock'+'  '+stockcode,font=tfont, bg='white')
+        plotlabel=TK.Label(plottitle,text='Stock'+'  '+stockcode,font=tfont)
         plotlabel.pack(pady=5)
         #figplot=TK.Frame(self)
         #figplot.pack(side=TK.TOP, fill=TK.X)
         self.img = ImageTk.PhotoImage(file=plotinfo)
         TK.Label(self, image=self.img).pack(side=TK.TOP) 
-'''        
-class modifiedap(arimaPredict):
-    def __init__(self,code,date):
-        self.code=code;
-        self.date=date;
-        self.data=ts.get_hist_data(code,"2015-01-01",date);
-    def predictor(self,days,ifCompare=False):
-        fit=auto_arima(list(reversed(self.data.close.tolist())),start_p=1,max_p=9,start_q=1,max_q=6,d=1,max_d=5,seasonal=False)
-        onePredict=fit.predict(n_periods=days)
-        x=range(0,days)
-        y=ts.get_hist_data(self.code,start=self.date,end=str(date.today()))
-        if(ifCompare):
-            if(pd.nrow(y)>days):
-                plt.plot(x,list(reversed(y.close.tolist()))[1:(days+1)],'g')
-            else:
-                plt.plot(x[0:(pd.nrow(y)-1)],list(reversed(y.close.tolist())),'g')
-        fig=plt.plot(x,onePredict,'r')
-        fig.savefig(self.code+'_'+self.date+'_'+str(days)+'.png')
-'''     
+    
 class mainGUI(TK.Tk):
     def __init__(self):
         super().__init__()
@@ -73,7 +56,7 @@ class mainGUI(TK.Tk):
         filemenu.add_command(label='Tick Data', accelerator='Ctrl+T', compound='left', underline=0, command=self.callthirdreal)
         premenu.add_command(label='Arima Self-correlation', accelerator='Ctrl+A', compound='left', underline=0, command=self.callarima)
         premenu.add_separator()
-        premenu.add_command(label='Lagrange Interpolation', accelerator='Ctrl+L', compound='left', underline=0)
+        premenu.add_command(label='Lagrange Interpolation', accelerator='Ctrl+L', compound='left', underline=0, command=self.calllag)
         self.config(menu=menubar)
         
         #构建主界面上的上证指数和
@@ -91,6 +74,8 @@ class mainGUI(TK.Tk):
         thirdreal=thilayerrealtime()
     def callarima(self):
         secarima=seclayerarima()
+    def calllag(self):
+        seclag=seclayerlt()
     def secopyright(self):
         thirdcopy=showcopyright()
     def trysimulation(self):
@@ -100,43 +85,130 @@ class seclayerarima(TK.Toplevel):
     def __init__(self):
         super().__init__()
         self.title('ARIMA Prediction')
-        arima1=TK.Frame(self)                
-        arima1.pack(side=TK.TOP, fill=TK.X)
-        inputexplain=TK.Label(arima1, text='股票代码如600292，日期格式为yyyy-mm-dd，如2017-01-01',pady=20)
-        inputexplain.pack(side=TK.LEFT, fill=TK.X)
-        arima2=TK.Frame(self)               #股票代码
+        self.resizable(width=False, height=False)
+        arifont=tkfont.Font(family='Helvetica', size=10, weight=tkfont.BOLD)
+        arimamain=TK.Frame(self, relief=TK.GROOVE, borderwidth=2)
+        arimamain.pack(side=TK.TOP, fill=TK.X)
+        TK.Label(arimamain, text='Please Enter the following information', font=arifont).pack(side=TK.TOP)
+        arima2=TK.Frame(arimamain)               #股票代码
         arima2.pack(side=TK.TOP, fill=TK.X)    
-        arima_code=TK.Label(arima2, text='Stock Code',width=10)
+        arima_code=TK.Label(arima2, text='Stock Code',width=15)
         arima_code.pack(side=TK.LEFT)
         self.arimacode=TK.StringVar()
-        arimaentry1=TK.Entry(arima2, textvariable=self.arimacode,width=38)
+        arimaentry1=TK.Entry(arima2, textvariable=self.arimacode,width=12)
         arimaentry1.pack(side=TK.LEFT)
-        arima3=TK.Frame(self)             #查询时间
+        arima3=TK.Frame(arimamain)             #查询时间
         arima3.pack(side=TK.TOP, fill=TK.X)   
-        arimastart=TK.Label(arima3, text='Start Date', width=10)
+        arimastart=TK.Label(arima2, text='Start Date', width=15)
         arimastart.pack(side=TK.LEFT)
         self.arimatime=TK.StringVar()
-        arimatimeentry=TK.Entry(arima3,textvariable=self.arimatime, width=13)
+        arimatimeentry=TK.Entry(arima2,textvariable=self.arimatime, width=12)
         arimatimeentry.pack(side=TK.LEFT)
-        arimaend=TK.Label(arima3, text='Days', width=10)
+        arimabase=TK.Label(arima3, text='Days for Setup', width=15)
+        arimabase.pack(side=TK.LEFT)
+        self.arimabday=TK.IntVar()
+        self.arimabday.set(5)
+        bdayentry=TK.Entry(arima3, textvariable=self.arimabday, width=12)
+        bdayentry.pack(side=TK.LEFT)
+        arimaend=TK.Label(arima3, text='Prediction Days', width=15)
         arimaend.pack(side=TK.LEFT)
         self.arima_days=TK.IntVar()
-        dayentry=TK.Entry(arima3,textvariable=self.arima_days, width=13)
+        dayentry=TK.Entry(arima3,textvariable=self.arima_days, width=12)
         dayentry.pack(side=TK.LEFT)        
-        arima4=TK.Frame(self)               #选项确定和取消  
-        arima4.pack(side=TK.TOP, fill=TK.X, pady=15)
+        arima4=TK.Frame(arimamain)               #选项确定和取消  
+        arima4.pack(side=TK.TOP, fill=TK.X, pady=10)
         TK.Button(arima4, text='Cancel', width=6, command=self.Cancel).pack(side=TK.RIGHT) #self.quit())
         TK.Button(arima4, text='Confirm', width=6, command=self.Confirm).pack(side=TK.RIGHT) #self.drawfigure())
+        noteframe=TK.Frame(self, relief=TK.GROOVE, borderwidth=2)
+        noteframe.pack(side=TK.TOP, fill=TK.X)
+        arima1=TK.Frame(noteframe)                
+        arima1.pack(side=TK.TOP, fill=TK.X)
+        inputexplain=TK.Label(arima1, text='Stock code such as 600292, Date format is yyyy-mm-dd')
+        inputexplain.pack(side=TK.LEFT, fill=TK.X)
+        supframe=TK.Frame(noteframe)
+        supframe.pack(side=TK.TOP, fill=TK.X)
+        TK.Label(supframe, text='Arima Prediction is based on the self-correlation of stockprice').pack(side=TK.LEFT)
+        setupframe=TK.Frame(noteframe)
+        setupframe.pack(side=TK.TOP, fill=TK.X)
+        TK.Label(setupframe, text='Days for setup is for prediction parameter setup').pack(side=TK.LEFT)
+        
     def Confirm(self):
-        print('Not finished')
-        '''
-        ap=modifiedap(self.arimacode.get(), self.arimatime.get())
-        ap.predictor(self.arima_days.get())
-        self.plotinfoap=self.arimacode.get()+'_'+self.arimatime.get()+'_'+str(self.arima_days.get())+'.png'
-        arimagraph=figureplot(self.plotinfoap, self.arimacode.get())
-        '''
+        confirmcode=self.arimacode.get()
+        confirmtime=self.arimatime.get()
+        confirmday=self.arima_days.get()
+        confirmbday=self.arimabday.get()
+        myarima=stockPredict(confirmcode, confirmtime)
+        myarima.arimaPredictor(confirmday,ifCompare=True, daysBefore=confirmbday)
+        self.plotarima='arima_'+confirmcode+'_'+confirmtime+'_'+str(confirmday)+'.png'
+        arimagraph=figureplot(self.plotarima, confirmcode+'  ARIMA'+'_'+confirmtime+'_'+str(confirmday)+' days')
     def Cancel(self):
         self.destroy()
+        
+class seclayerlt(TK.Toplevel):
+    def __init__(self):
+        super().__init__()
+        self.title('Lagrange Interpolation Prediction')
+        self.resizable(width=False, height=False)
+        ltfont=tkfont.Font(family='Helvetica', size=10, weight=tkfont.BOLD)
+        ltmain=TK.Frame(self, relief=TK.GROOVE, borderwidth=2)
+        ltmain.pack(side=TK.TOP, fill=TK.X)
+        TK.Label(ltmain, text='Please Enter the following information', font=ltfont).pack(side=TK.TOP)
+        lt2=TK.Frame(ltmain)               
+        lt2.pack(side=TK.TOP, fill=TK.X)    
+        lt_code=TK.Label(lt2, text='Stock Code',width=15)
+        lt_code.pack(side=TK.LEFT)
+        self.ltcode=TK.StringVar()
+        ltentry1=TK.Entry(lt2, textvariable=self.ltcode,width=12)
+        ltentry1.pack(side=TK.LEFT)
+        #arima3=TK.Frame(self)             #查询时间
+        #arima3.pack(side=TK.TOP, fill=TK.X)   
+        ltstart=TK.Label(lt2, text='Start Date', width=15)
+        ltstart.pack(side=TK.LEFT)
+        self.lttime=TK.StringVar()
+        lttimeentry=TK.Entry(lt2,textvariable=self.lttime, width=12)
+        lttimeentry.pack(side=TK.LEFT)
+        lt3=TK.Frame(ltmain)               #股票代码
+        lt3.pack(side=TK.TOP, fill=TK.X) 
+        ltbase=TK.Label(lt3, text='Days for Setup', width=15)
+        ltbase.pack(side=TK.LEFT)
+        self.ltbday=TK.IntVar()
+        self.ltbday.set(3)
+        ltbdayentry=TK.Entry(lt3, textvariable=self.ltbday, width=12)
+        ltbdayentry.pack(side=TK.LEFT)
+        ltend=TK.Label(lt3, text='Prediction Days', width=15)
+        ltend.pack(side=TK.LEFT)
+        self.lt_days=TK.IntVar()
+        ltdayentry=TK.Entry(lt3,textvariable=self.lt_days, width=12)
+        ltdayentry.pack(side=TK.LEFT)        
+        lt4=TK.Frame(ltmain)               #选项确定和取消  
+        lt4.pack(side=TK.TOP, fill=TK.X, pady=10)
+        TK.Button(lt4, text='Cancel', width=6, command=self.Cancel).pack(side=TK.RIGHT) #self.quit())
+        TK.Button(lt4, text='Confirm', width=6, command=self.Confirm).pack(side=TK.RIGHT) #self.drawfigure())
+        ltnoteframe=TK.Frame(self, relief=TK.GROOVE, borderwidth=2)
+        ltnoteframe.pack(side=TK.TOP, fill=TK.X)
+        lt1=TK.Frame(ltnoteframe)                
+        lt1.pack(side=TK.TOP, fill=TK.X)
+        inputexplain=TK.Label(lt1, text='Stock code such as 600292, Date format is yyyy-mm-dd')
+        inputexplain.pack(side=TK.LEFT, fill=TK.X)
+        ltsupframe=TK.Frame(ltnoteframe)
+        ltsupframe.pack(side=TK.TOP, fill=TK.X)
+        TK.Label(ltsupframe, text='Lagrange Interpolation is a numeric method').pack(side=TK.LEFT)
+        ltsetupframe=TK.Frame(ltnoteframe)
+        ltsetupframe.pack(side=TK.TOP,fill=TK.X)
+        TK.Label(ltsetupframe, text='Days for setup is for prediction parameter setup').pack(side=TK.LEFT)
+        
+    def Confirm(self):
+        ltconfirmcode=self.ltcode.get()
+        ltconfirmtime=self.lttime.get()
+        ltconfirmday=self.lt_days.get()
+        ltconfirmbday=self.ltbday.get()
+        mylt=stockPredict(ltconfirmcode, ltconfirmtime)
+        mylt.lagrangeInterpolation(ltconfirmday,ifCompare=True, daysBefore=ltconfirmbday)
+        self.plotlt='lagrange_'+ltconfirmcode+'_'+ltconfirmtime+'_'+str(ltconfirmday)+'.png'
+        ltgraph=figureplot(self.plotlt, ltconfirmcode+'  lagrange'+'_'+ltconfirmtime+'_'+str(ltconfirmday)+' days')
+    def Cancel(self):
+        self.destroy()
+        
         
 class showcopyright(TK.Toplevel):
     def __init__(self):
@@ -145,41 +217,44 @@ class showcopyright(TK.Toplevel):
         self.geometry('400x100')
         self.resizable(width=False, height=False)
         menufont=tkfont.Font(family='Helvetica', size=10, weight=tkfont.BOLD)
-        TK.Label(self, text='Copyright Reserved to 理科小矿工 丁思凡，颜峻',font=menufont, pady=30).pack()
+        TK.Label(self, text='Copyright Reserved to 理科小矿工 丁思凡，颜峻',font=menufont, pady=20).pack()
         
 class thilayerhistory(TK.Toplevel):
     def __init__(self):
         super().__init__()
         self.title("See Period Data")
-        self.geometry('350x180')         #history data窗口大小
         self.resizable(width=False, height=False)
-        row3=TK.Frame(self)                
-        row3.pack(side=TK.TOP, fill=TK.X)
-        inputexplain=TK.Label(row3, text='股票代码如600292，日期格式为yyyy-mm-dd，如2017-01-01',pady=20)
-        inputexplain.pack(side=TK.LEFT, fill=TK.X)
-        row1=TK.Frame(self)               #股票代码
+        hisfont=tkfont.Font(family='Helvetica', size=10, weight=tkfont.BOLD)
+        row_main=TK.Frame(self, relief=TK.GROOVE, borderwidth=2)
+        row_main.pack(side=TK.TOP, fill=TK.X)
+        TK.Label(row_main, text='Please Enter the following information', font=hisfont, pady=5).pack(side=TK.TOP)
+        row1=TK.Frame(row_main,pady=5)               #股票代码
         row1.pack(side=TK.TOP, fill=TK.X)    
         stock_code=TK.Label(row1, text='Stock Code',width=10)
         stock_code.pack(side=TK.LEFT)
         self.stockcode=TK.StringVar()
-        codeentry=TK.Entry(row1, textvariable=self.stockcode,width=38)
+        codeentry=TK.Entry(row1, textvariable=self.stockcode,width=35)
         codeentry.pack(side=TK.LEFT)
-        row2=TK.Frame(self)             #查询时间
+        row2=TK.Frame(row_main)             #查询时间
         row2.pack(side=TK.TOP, fill=TK.X)   
         start_time=TK.Label(row2, text='Start Date', width=10)
         start_time.pack(side=TK.LEFT)
         self.starttime=TK.StringVar()
-        starttimeentry=TK.Entry(row2,textvariable=self.starttime, width=13)
+        starttimeentry=TK.Entry(row2,textvariable=self.starttime, width=12)
         starttimeentry.pack(side=TK.LEFT)
         end_time=TK.Label(row2, text='End Date', width=10)
         end_time.pack(side=TK.LEFT)
         self.endtime=TK.StringVar()
-        endtimeentry=TK.Entry(row2,textvariable=self.endtime, width=13)
+        endtimeentry=TK.Entry(row2,textvariable=self.endtime, width=12)
         endtimeentry.pack(side=TK.LEFT)        
-        row4=TK.Frame(self)               #选项确定和取消  
+        row4=TK.Frame(row_main)               #选项确定和取消  
         row4.pack(side=TK.TOP, fill=TK.X, pady=15)
         TK.Button(row4, text='Cancel', width=6, command=self.Cancel).pack(side=TK.RIGHT) #self.quit())
         TK.Button(row4, text='Confirm', width=6, command=self.Confirm).pack(side=TK.RIGHT) #self.drawfigure())
+        row3=TK.Frame(self, relief=TK.GROOVE, borderwidth=2, pady=5)                
+        row3.pack(side=TK.TOP, fill=TK.X)
+        inputexplain=TK.Label(row3, text='Stock code such as 600292, Date format is yyyy-mm-dd')
+        inputexplain.pack(side=TK.LEFT, fill=TK.X)
     def Confirm(self):
         self.code=self.stockcode.get()
         self.stdate=self.starttime.get()
@@ -194,29 +269,32 @@ class thilayerhistory(TK.Toplevel):
 class thilayerrealtime(TK.Toplevel):
     def __init__(self):
         super().__init__()
-        self.title("See Day Data")
-        rowl=TK.Frame(self)                
+        self.title("See Tick Data")
+        self.resizable(width=False, height=False)
+        tickfont=tkfont.Font(family='Helvetica', size=10, weight=tkfont.BOLD)
+        row_main=TK.Frame(self, relief=TK.GROOVE, borderwidth=2)
+        row_main.pack(side=TK.TOP, fill=TK.X)
+        TK.Label(row_main, text='Please Enter the following information', font=tickfont, pady=5).pack(side=TK.TOP)
+        rowl=TK.Frame(row_main)                
         rowl.pack(side=TK.TOP, fill=TK.X)
-        inputexplain=TK.Label(rowl, text='股票代码如600292，时间格式为yyyy-mm-dd，如2017-01-01',pady=15)
-        inputexplain.pack(side=TK.LEFT, fill=TK.X)
-        row1=TK.Frame(self)               #股票代码
-        row1.pack(side=TK.TOP, fill=TK.X)    
-        stock_code=TK.Label(row1, text='Stock Code',width=10)
+        stock_code=TK.Label(rowl, text='Stock Code',width=10)
         stock_code.pack(side=TK.LEFT)
         self.stockcode2=TK.StringVar()
-        codeentry=TK.Entry(row1, textvariable=self.stockcode2,width=35)
-        codeentry.pack(side=TK.LEFT)  
-        row2=TK.Frame(self)             #查询时间
-        row2.pack(side=TK.TOP, fill=TK.X)   
-        start_time=TK.Label(row2, text='Date', width=10)
+        codeentry=TK.Entry(rowl, textvariable=self.stockcode2,width=15)
+        codeentry.pack(side=TK.LEFT)     
+        start_time=TK.Label(rowl, text='Date', width=10)
         start_time.pack(side=TK.LEFT)
         self.starttime2=TK.StringVar()
-        starttimeentry=TK.Entry(row2,textvariable=self.starttime2, width=10)
+        starttimeentry=TK.Entry(rowl,textvariable=self.starttime2, width=10)
         starttimeentry.pack(side=TK.LEFT)
-        row4=TK.Frame(self)               #选项确定和取消  
+        row4=TK.Frame(row_main, pady=5)               #选项确定和取消  
         row4.pack(side=TK.TOP, fill=TK.X)
         TK.Button(row4, text='Cancel', width=6, command=self.Cancel).pack(side=TK.RIGHT) #self.quit())
         TK.Button(row4, text='Confirm', width=6, command=self.Confirm).pack(side=TK.RIGHT) #self.drawfigure())
+        row3=TK.Frame(self, relief=TK.GROOVE, borderwidth=2, pady=5)                
+        row3.pack(side=TK.TOP, fill=TK.X)
+        inputexplain=TK.Label(row3, text='Stock code such as 600292, Date format is yyyy-mm-dd')
+        inputexplain.pack(side=TK.LEFT, fill=TK.X)
     def Confirm(self):       
         self.code2=self.stockcode2.get()
         self.stdate2=self.starttime2.get()
@@ -232,7 +310,11 @@ class seclayersim(TK.Toplevel):
         super().__init__()
         self.title("Stock Price Simulator")
         self.resizable(width=False, height=False)
-        row_bal3=TK.Frame(self, pady=5)
+        simfont=tkfont.Font(family='Helvetica', size=10, weight=tkfont.BOLD)
+        TK.Label(self, text='Please Enter the following information', font=simfont).pack(side=TK.TOP)
+        row_mainbal=TK.Frame(self,relief=TK.GROOVE, borderwidth=2 )
+        row_mainbal.pack(side=TK.TOP, fill=TK.X)
+        row_bal3=TK.Frame(row_mainbal, pady=5)
         row_bal3.pack(side=TK.TOP, fill=TK.X)
         stock_code3=TK.Label(row_bal3, text='Balance',width=15)
         stock_code3.pack(side=TK.LEFT)
@@ -250,7 +332,7 @@ class seclayersim(TK.Toplevel):
         self.stime.set('00:00:00')
         time_entry=TK.Entry(row_bal3, textvariable=self.stime,width=10)
         time_entry.pack(side=TK.LEFT)
-        row_bal4=TK.Frame(self)
+        row_bal4=TK.Frame(row_mainbal)
         row_bal4.pack(side=TK.TOP, fill=TK.X)
         TK.Label(row_bal4, text='Fee (Optional)',width=15).pack(side=TK.LEFT)
         self.fee=TK.IntVar()
